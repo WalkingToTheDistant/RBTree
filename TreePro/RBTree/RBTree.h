@@ -8,6 +8,16 @@
 
 #import <Foundation/Foundation.h>
 
+/** 红黑树 */
 @interface RBTree : NSObject
+
+/** 全局对象 */
++ (instancetype) sharedRBTree;
+
+/** 添加节点值 */
+- (void) addValue:(NSNumber*)value;
+
+/** 添加节点值 */
++ (void) addValue:(NSNumber*)value;
 
 @end
