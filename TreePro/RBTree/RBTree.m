@@ -76,9 +76,9 @@ static RBTree *sharedRBTree = nil;
                     withBrotherNode:brotherForReplaceNode
      withIsLeftOrRight:isLeftOfParentNodeForCurrentNode];
 }
-- (void) handleRBTreeForDeleteNode:(RBTreeNode*)parentNodeForCurrentNode
-                   withCurrentNode:(RBTreeNode*)currentNode
-                   withBrotherNode:(RBTreeNode*)brotherForCurrentNode
+- (void) handleRBTreeForDeleteNode:(__weak RBTreeNode*)parentNodeForCurrentNode
+                   withCurrentNode:(__weak RBTreeNode*)currentNode
+                   withBrotherNode:(__weak RBTreeNode*)brotherForCurrentNode
                  withIsLeftOrRight:(BOOL)isLeftOfParentNodeForCurrentNode
 {
     /**
@@ -90,8 +90,8 @@ static RBTree *sharedRBTree = nil;
      情况5：兄弟节点为空，则直接把当前节点指向其父节点再处理
      */
     if(currentNode != mRootTreeNode
-       && currentNode.getNodeColor == NodeColor_Black){
-        
+       && currentNode.getNodeColor == NodeColor_Black)
+    {
         RBTreeNode *grandFatherNode = parentNodeForCurrentNode.getParentNode; // 不是根节点，则必存在父节点
         RBTreeNode *uncleNode = nil;
         BOOL isLeftOrRightForGrandFather = YES;
@@ -255,7 +255,7 @@ static RBTree *sharedRBTree = nil;
     }
     
     /** 红黑树操作 */
-    [self handleRBTree:nodeAdd];
+    [self handleRBTreeForAddNode:nodeAdd];
 }
 - (void) addValueWithParentNode:(RBTreeNode*)parentNode withNewTreeNode:(RBTreeNode*)newTreeNode
 {
@@ -278,7 +278,7 @@ static RBTree *sharedRBTree = nil;
     }
 }
 /** 根据当前指向的节点调整红黑树 */
-- (void) handleRBTree:(__weak RBTreeNode*)treeNode
+- (void) handleRBTreeForAddNode:(__weak RBTreeNode*)treeNode
 {
     /** 情况1：红黑树只有一个根节点 */
     if(treeNode == mRootTreeNode){ // 如果是根节点，那么直接将节点变黑即可
@@ -306,7 +306,7 @@ static RBTree *sharedRBTree = nil;
         [parentNode setNodeColor:NodeColor_Black];
         [uncleNode setNodeColor:NodeColor_Black];
         [grandfatherNode setNodeColor:NodeColor_Red];
-        return [self handleRBTree:grandfatherNode];
+        return [self handleRBTreeForAddNode:grandfatherNode];
     }
     
     /** 情况4：当前节点的父节点为红色，而叔叔节点为黑色，或者为空 */
@@ -318,22 +318,22 @@ static RBTree *sharedRBTree = nil;
                 [parentNode setNodeColor:NodeColor_Black];
                 [grandfatherNode setNodeColor:NodeColor_Red];
                 [self nodeRotate_toRight:grandfatherNode];
-                return [self handleRBTree:grandfatherNode];
+                return [self handleRBTreeForAddNode:grandfatherNode];
             } else { // 当前节点是父节点的右孩纸，那么先把当前节点指向父节点，然后在父节点左旋
                 [self nodeRotate_toLeft:parentNode];
-                return [self handleRBTree:parentNode];
+                return [self handleRBTreeForAddNode:parentNode];
             }
             
         } else { // 父节点是祖父节点的右孩纸
             if(isLeftForCurrentNodeToParent == YES){// 当前节点是父节点的左孩纸，那么先把当前节点指向父节点，然后在父节点右旋
                 [self nodeRotate_toRight:parentNode];
-                return [self handleRBTree:parentNode];
+                return [self handleRBTreeForAddNode:parentNode];
             
             } else {// 当前节点是父节点的右孩纸，这时候只需要把父节点变为黑，祖父节点变成红，当前节点指向祖父节点，并在祖父节点向左旋转
                 [parentNode setNodeColor:NodeColor_Black];
                 [grandfatherNode setNodeColor:NodeColor_Red];
                 [self nodeRotate_toLeft:grandfatherNode];
-                return [self handleRBTree:grandfatherNode];
+                return [self handleRBTreeForAddNode:grandfatherNode];
             }
         }
     }
