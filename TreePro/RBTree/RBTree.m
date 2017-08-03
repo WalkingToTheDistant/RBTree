@@ -24,6 +24,216 @@ static RBTree *sharedRBTree = nil;
     return sharedRBTree;
 }
 
+/** 删除节点值 */
+- (void) deleteValue:(NSNumber*)value
+{
+    // ====== 先按照二叉树的方式删除节点，然后在调整红黑树 ======
+    RBTreeNode *deleteNode = [self searchNodeWithParentValue:mRootTreeNode withSearchValue:value];
+    if(deleteNode == nil) { return; } // 找不到待删除的节点
+    
+    BOOL isLeftOrRightReplace = (deleteNode.getLeftNode != nil)? YES : NO;
+    RBTreeNode *replaceNode = (isLeftOrRightReplace == YES)? [self getMaxValueNodeOfParentNode:deleteNode.getLeftNode] : [self getMinValueNodeOfParentNode:deleteNode.getRightNode]; // 替换节点：左子树中最大的节点，或者是右子树中最小的节点
+    // 开始删除
+    RBTreeNode *parentForReplaceNode = nil;
+    RBTreeNode *brotherForReplaceNode = nil;
+    BOOL isLeftOfParentNodeForCurrentNode = YES;
+    if(replaceNode != nil){
+        parentForReplaceNode = replaceNode.getParentNode;
+        if(parentForReplaceNode.getLeftNode == replaceNode){
+            brotherForReplaceNode = parentForReplaceNode.getRightNode;
+            isLeftOfParentNodeForCurrentNode = YES;
+        } else {
+            brotherForReplaceNode = parentForReplaceNode.getLeftNode;
+            isLeftOfParentNodeForCurrentNode = NO;
+        }
+        
+        if(isLeftOrRightReplace == YES){ // 左孩纸树中最大的，所以必没有右孩纸
+            [parentForReplaceNode setRightNode:replaceNode.getLeftNode];
+        } else { // 右子树中最小的，所以必没有左孩纸
+            [parentForReplaceNode setLeftNode:replaceNode.getRightNode];
+        }
+    }
+    BOOL isRootForDeleteNode = (deleteNode == mRootTreeNode)? YES : NO;
+    [replaceNode setLeftNode:deleteNode.getLeftNode];
+    [replaceNode setRightNode:deleteNode.getRightNode];
+    [deleteNode setLeftNode:nil];
+    [deleteNode setRightNode:nil];
+    if(isRootForDeleteNode == YES){
+        mRootTreeNode = replaceNode;
+    } else {
+        RBTreeNode *parentForDeleteNode = deleteNode.getParentNode;
+        BOOL bIsLeftOrRight = (parentForDeleteNode.getLeftNode == deleteNode)? YES : NO;
+        if(bIsLeftOrRight == YES){
+            [parentForDeleteNode setLeftNode:replaceNode];
+        } else {
+            [parentForDeleteNode setRightNode:replaceNode];
+        }
+    }
+    
+    // ====== 开始调整红黑树规则 ======
+    [self handleRBTreeForDeleteNode:parentForReplaceNode
+                    withCurrentNode:replaceNode
+                    withBrotherNode:brotherForReplaceNode
+     withIsLeftOrRight:isLeftOfParentNodeForCurrentNode];
+}
+- (void) handleRBTreeForDeleteNode:(RBTreeNode*)parentNodeForCurrentNode
+                   withCurrentNode:(RBTreeNode*)currentNode
+                   withBrotherNode:(RBTreeNode*)brotherForCurrentNode
+                 withIsLeftOrRight:(BOOL)isLeftOfParentNodeForCurrentNode
+{
+    /**
+     下面针对当前节点是父节点的左孩纸的情况讨论，当前节点是右孩纸的话，旋转就相反
+     情况1：当前节点的兄弟节点为红色，则根据从任意节点出发，各个分子的黑高度是一样的规则，那么兄弟节点的孩纸树中必有黑节点，则把兄弟节点变为黑，父节点变为红，然后以父节点左旋，旋转之后，兄弟节点的左孩纸则变成当前节点的兄弟节点（变成情况2）。
+     情况2：兄弟节点为黑，其子孩纸都为黑，那么则把兄弟节点变为红，然后当前节点移到其父节点。
+     情况3：兄弟节点为黑，其左孩纸为红，右孩纸为黑，那么则把左孩纸变黑，兄弟节点变红，然后在兄弟节点右旋，这样当前节点的兄弟节点则变成了右转后的左节点（变成情况4）
+     情况4：兄弟节点为黑，其右孩纸为红，那么则把兄弟节点的颜色变成其父节点的颜色，而父节点的颜色变成黑，兄弟节点的右孩纸变为红，在父节点左旋
+     情况5：兄弟节点为空，则直接把当前节点指向其父节点再处理
+     */
+    if(currentNode != mRootTreeNode
+       && currentNode.getNodeColor == NodeColor_Black){
+        
+        RBTreeNode *grandFatherNode = parentNodeForCurrentNode.getParentNode; // 不是根节点，则必存在父节点
+        RBTreeNode *uncleNode = nil;
+        BOOL isLeftOrRightForGrandFather = YES;
+        if(grandFatherNode == nil){
+            isLeftOrRightForGrandFather = YES;
+            uncleNode = nil;
+            
+        } else if(grandFatherNode.getLeftNode == parentNodeForCurrentNode){
+            isLeftOrRightForGrandFather = YES;
+            uncleNode = grandFatherNode.getRightNode;
+            
+        } else {
+            isLeftOrRightForGrandFather = NO;
+            uncleNode = grandFatherNode.getLeftNode;
+        }
+        
+        // ======= 先处理没有旋转的情况 =======
+        if(brotherForCurrentNode == nil){ // 情况5
+            [self handleRBTreeForDeleteNode:grandFatherNode withCurrentNode:parentNodeForCurrentNode withBrotherNode:uncleNode withIsLeftOrRight:isLeftOrRightForGrandFather];
+            
+        } else if(brotherForCurrentNode.getNodeColor == NodeColor_Black
+                  && ( brotherForCurrentNode.getLeftNode == nil || brotherForCurrentNode.getLeftNode.getNodeColor == NodeColor_Black )
+                  && ( brotherForCurrentNode.getRightNode == nil || brotherForCurrentNode.getRightNode.getNodeColor == NodeColor_Black) )
+        {   // 情况2
+            [brotherForCurrentNode setNodeColor:NodeColor_Red];
+            [self handleRBTreeForDeleteNode:grandFatherNode withCurrentNode:parentNodeForCurrentNode withBrotherNode:uncleNode withIsLeftOrRight:isLeftOrRightForGrandFather];
+            
+        }
+        // ======= 接下来处理需要进行旋转的情况 =======
+        else if(isLeftOfParentNodeForCurrentNode == YES){ // 当前节点是左孩纸：接下来的情况需要进行旋转， 则需要判断当前节点是左孩纸还是右孩纸
+            if(brotherForCurrentNode.getNodeColor == NodeColor_Red){ // 情况1
+                [brotherForCurrentNode setNodeColor:NodeColor_Black];
+                [parentNodeForCurrentNode setNodeColor:NodeColor_Red];
+                [self nodeRotate_toLeft:parentNodeForCurrentNode];
+                [self handleRBTreeForDeleteNode:parentNodeForCurrentNode withCurrentNode:currentNode withBrotherNode:parentNodeForCurrentNode.getRightNode withIsLeftOrRight:isLeftOfParentNodeForCurrentNode];
+         
+            } else if(brotherForCurrentNode.getNodeColor == NodeColor_Black
+                      && (brotherForCurrentNode.getLeftNode != nil && brotherForCurrentNode.getLeftNode.getNodeColor == NodeColor_Red)
+                      && (brotherForCurrentNode.getRightNode == nil || brotherForCurrentNode.getRightNode.getNodeColor == NodeColor_Black))
+            {   // 情况3
+                [brotherForCurrentNode.getLeftNode setNodeColor:NodeColor_Black];
+                [brotherForCurrentNode setNodeColor:NodeColor_Red];
+                [self nodeRotate_toRight:brotherForCurrentNode];
+                [self handleRBTreeForDeleteNode:parentNodeForCurrentNode
+                                withCurrentNode:currentNode
+                                withBrotherNode:parentNodeForCurrentNode.getRightNode
+                              withIsLeftOrRight:isLeftOfParentNodeForCurrentNode];
+                
+            } else if(brotherForCurrentNode.getNodeColor == NodeColor_Black
+                      && (brotherForCurrentNode.getRightNode != nil && brotherForCurrentNode.getRightNode.getNodeColor == NodeColor_Red))
+            {   // 情况4
+                [brotherForCurrentNode setNodeColor:[parentNodeForCurrentNode getNodeColor]];
+                [parentNodeForCurrentNode setNodeColor:NodeColor_Black];
+                [brotherForCurrentNode.getRightNode setNodeColor:NodeColor_Black];
+                [self nodeRotate_toLeft:parentNodeForCurrentNode];
+                [self handleRBTreeForDeleteNode:parentNodeForCurrentNode
+                                withCurrentNode:currentNode
+                                withBrotherNode:parentNodeForCurrentNode.getRightNode
+                              withIsLeftOrRight:YES];
+            }
+        
+        } else if(isLeftOfParentNodeForCurrentNode != YES){ // 当前节点是右孩纸
+            if(brotherForCurrentNode.getNodeColor == NodeColor_Red){ // 情况1
+                [brotherForCurrentNode setNodeColor:NodeColor_Black];
+                [parentNodeForCurrentNode setNodeColor:NodeColor_Red];
+                [self nodeRotate_toRight:parentNodeForCurrentNode];
+                [self handleRBTreeForDeleteNode:parentNodeForCurrentNode withCurrentNode:currentNode withBrotherNode:parentNodeForCurrentNode.getLeftNode withIsLeftOrRight:isLeftOfParentNodeForCurrentNode];
+                
+            } else if(brotherForCurrentNode.getNodeColor == NodeColor_Black
+                      && (brotherForCurrentNode.getRightNode != nil && brotherForCurrentNode.getRightNode.getNodeColor == NodeColor_Red)
+                      && (brotherForCurrentNode.getLeftNode == nil || brotherForCurrentNode.getLeftNode.getNodeColor == NodeColor_Black))
+            {   // 情况3
+                [brotherForCurrentNode.getRightNode setNodeColor:NodeColor_Black];
+                [brotherForCurrentNode setNodeColor:NodeColor_Red];
+                [self nodeRotate_toLeft:brotherForCurrentNode];
+                [self handleRBTreeForDeleteNode:parentNodeForCurrentNode
+                                withCurrentNode:currentNode
+                                withBrotherNode:parentNodeForCurrentNode.getLeftNode
+                              withIsLeftOrRight:isLeftOfParentNodeForCurrentNode];
+                
+            } else if(brotherForCurrentNode.getNodeColor == NodeColor_Black
+                      && (brotherForCurrentNode.getLeftNode != nil && brotherForCurrentNode.getLeftNode.getNodeColor == NodeColor_Red))
+            {   // 情况4
+                [brotherForCurrentNode setNodeColor:[parentNodeForCurrentNode getNodeColor]];
+                [parentNodeForCurrentNode setNodeColor:NodeColor_Black];
+                [brotherForCurrentNode.getLeftNode setNodeColor:NodeColor_Black];
+                [self nodeRotate_toRight:parentNodeForCurrentNode];
+                [self handleRBTreeForDeleteNode:parentNodeForCurrentNode
+                                withCurrentNode:currentNode
+                                withBrotherNode:parentNodeForCurrentNode.getLeftNode
+                              withIsLeftOrRight:isLeftOfParentNodeForCurrentNode];
+            }
+            
+        }
+    }
+    [currentNode setNodeColor:NodeColor_Black];
+}
+/** 找到该节点中最小的节点 */
+- (RBTreeNode*) getMinValueNodeOfParentNode:(RBTreeNode*)parentNode
+{
+    if(parentNode == nil){
+        return nil;
+    }
+    
+    if(parentNode.getLeftNode == nil){
+        return parentNode;
+    }
+    return [self getMinValueNodeOfParentNode:parentNode.getLeftNode];
+}
+/** 找到该节点中最大的节点 */
+- (RBTreeNode*) getMaxValueNodeOfParentNode:(RBTreeNode*)parentNode
+{
+    if(parentNode.getRightNode == nil){
+        return parentNode;
+    }
+    return [self getMaxValueNodeOfParentNode:parentNode.getRightNode];
+}
+- (RBTreeNode*) searchNodeWithParentValue:(RBTreeNode*)parentNode withSearchValue:(NSNumber*)value
+{
+    RBTreeNode *nodeResult = nil;
+    if(parentNode == nil) {
+        return nodeResult;
+    }
+    if([parentNode.mNodeValue compare:value] == NSOrderedSame){
+        nodeResult = parentNode;
+        
+    } else if([parentNode.mNodeValue compare:value] == NSOrderedDescending){ // 下降，左孩纸
+        nodeResult = [self searchNodeWithParentValue:parentNode.getLeftNode withSearchValue:value];
+        
+    } else if([parentNode.mNodeValue compare:value] == NSOrderedAscending){ // 上升，右孩纸
+        nodeResult = [self searchNodeWithParentValue:parentNode.getRightNode withSearchValue:value];
+        
+    }
+    return nodeResult;
+}
+
+/** 删除节点值 */
++ (void) deleteValue:(NSNumber*)value
+{
+    [[RBTree sharedRBTree] deleteValue:value];
+}
+
 /** 添加节点值 */
 + (void) addValue:(NSNumber*)value
 {
@@ -50,7 +260,8 @@ static RBTree *sharedRBTree = nil;
 - (void) addValueWithParentNode:(RBTreeNode*)parentNode withNewTreeNode:(RBTreeNode*)newTreeNode
 {
     /** 二叉树的插入操作 */
-    if(newTreeNode.getNodeValue <= parentNode.getNodeValue){ // 左节点
+    if([newTreeNode.getNodeValue compare:parentNode.getNodeValue] == NSOrderedSame
+       || [newTreeNode.getNodeValue compare:parentNode.getNodeValue] == NSOrderedDescending){ // 左节点
     
         if(parentNode.getLeftNode == nil){ // 如果左孩纸为空，直接赋值
             [parentNode setLeftNode:newTreeNode];
@@ -80,11 +291,11 @@ static RBTree *sharedRBTree = nil;
         return;
     }
     
-    /** 以下情况父节点必定是红色，所以按照红黑树规则，必定存在祖父节点 */
+    /** 以下情况父节点必定是红色，所以按照红黑树规则，必定存在祖父节点（规则：红黑树的根节点必是黑色） */
     RBTreeNode *parentNode = treeNode.getParentNode; // 父节点
     RBTreeNode *grandfatherNode = parentNode.getParentNode; // 祖父节点
-    BOOL isLeftForParentNodeToGrandfather = (grandfatherNode.getLeftNode == parentNode)? YES : NO; // 父节点是左节点还是右节点
-    RBTreeNode *uncleNode = (isLeftForParentNodeToGrandfather == YES)? grandfatherNode.getRightNode : grandfatherNode.getLeftNode; // 叔叔节点
+    BOOL isLeftForParentNodeToGrandfather = (grandfatherNode.getLeftNode == parentNode)? YES : NO; // 父节点是左节点还是右节点，这个决定处理红黑树旋转的方向
+    RBTreeNode *uncleNode = (isLeftForParentNodeToGrandfather == YES)? grandfatherNode.getRightNode : grandfatherNode.getLeftNode; // 叔叔节点`
     BOOL isLeftForCurrentNodeToParent = (parentNode.getLeftNode == treeNode)? YES : NO; // 当前节点是左节点还是右节点
     
     /** 情况3：当前节点的父节点为红色，而叔叔节点也为红色（祖父节点和叔叔节点不为空） */

@@ -8,8 +8,8 @@
 
 #import <Foundation/Foundation.h>
 typedef enum : int{
-    NodeColor_Red = 1,
-    NodeColor_Black = 2,
+    NodeColor_Red = 0,  /* 红色 */
+    NodeColor_Black,    /* 黑色 */
     
 } NodeColor;
 

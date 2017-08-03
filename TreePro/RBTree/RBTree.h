@@ -20,4 +20,10 @@
 /** 添加节点值 */
 + (void) addValue:(NSNumber*)value;
 
+/** 删除节点值 */
+- (void) deleteValue:(NSNumber*)value;
+
+/** 删除节点值 */
++ (void) deleteValue:(NSNumber*)value;
+
 @end
