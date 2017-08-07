@@ -7,7 +7,6 @@
 //
 
 #import "RBTree.h"
-#import "RBTreeNode.h"
 
 static RBTree *sharedRBTree = nil;
 
@@ -22,6 +21,81 @@ static RBTree *sharedRBTree = nil;
         sharedRBTree = [RBTree new];
     }
     return sharedRBTree;
+}
+/** 获取树的根节点 */
+- (RBTreeNode*) getRootTreeNode
+{
+    return mRootTreeNode;
+}
+/** 获取树高度 */
+- (int) getTreeHeight
+{
+    int height = 0;
+    if(mRootTreeNode == nil){
+        return height;
+    }
+    height = [self getTreeHeightWithNode:mRootTreeNode withHeightValue:height];
+    
+    return height;
+}
+/** 获取某个节点的右子树高度 */
+- (int) getTreeNodeRightHeight:(RBTreeNode*)treeNode
+{
+    int height = 0;
+    if(treeNode == nil){
+        return height;
+    }
+    height = [self getTreeNodeRightHeight:treeNode withHeightValue:height];
+    return height;
+}
+- (int) getTreeNodeRightHeight:(RBTreeNode *)treeNode withHeightValue:(int)heightValue
+{
+    if(treeNode == nil){
+        return heightValue;
+    }
+    if(treeNode.getRightNode != nil){
+        heightValue += 1;
+        heightValue = [self getTreeNodeRightHeight:treeNode.getRightNode withHeightValue:heightValue];
+    }
+    return heightValue;
+}
+
+/** 获取某个节点的左子树高度 */
+- (int) getTreeNodeLeftHeight:(RBTreeNode*)treeNode
+{
+    int height = 0;
+    if(treeNode == nil){
+        return height;
+    }
+    height = [self getTreeNodeLeftHeight:treeNode withHeightValue:height];
+    return height;
+}
+- (int) getTreeNodeLeftHeight:(RBTreeNode *)treeNode withHeightValue:(int)heightValue
+{
+    if(treeNode == nil){
+        return heightValue;
+    }
+    if(treeNode.getLeftNode != nil){
+        heightValue += 1;
+        heightValue = [self getTreeNodeLeftHeight:treeNode.getLeftNode withHeightValue:heightValue];
+    }
+    return heightValue;
+}
+- (int) getTreeHeightWithNode:(RBTreeNode*)treeNode withHeightValue:(int)heightValue
+{
+    if(treeNode == nil){
+        return heightValue;
+    }
+    heightValue += 1;
+    int leftHeight = heightValue;
+    int rightHeight = heightValue;
+    if(treeNode.getLeftNode != nil){
+        leftHeight = [self getTreeHeightWithNode:treeNode.getLeftNode withHeightValue:heightValue];
+    }
+    if(treeNode.getRightNode != nil){
+        rightHeight = [self getTreeHeightWithNode:treeNode.getRightNode withHeightValue:heightValue];
+    }
+    return (leftHeight > rightHeight)? leftHeight : rightHeight;
 }
 
 /** 删除节点值 */
@@ -76,9 +150,9 @@ static RBTree *sharedRBTree = nil;
                     withBrotherNode:brotherForReplaceNode
      withIsLeftOrRight:isLeftOfParentNodeForCurrentNode];
 }
-- (void) handleRBTreeForDeleteNode:(__weak RBTreeNode*)parentNodeForCurrentNode
-                   withCurrentNode:(__weak RBTreeNode*)currentNode
-                   withBrotherNode:(__weak RBTreeNode*)brotherForCurrentNode
+- (void) handleRBTreeForDeleteNode:(RBTreeNode*)parentNodeForCurrentNode
+                   withCurrentNode:(RBTreeNode*)currentNode
+                   withBrotherNode:(RBTreeNode*)brotherForCurrentNode
                  withIsLeftOrRight:(BOOL)isLeftOfParentNodeForCurrentNode
 {
     /**
@@ -218,26 +292,14 @@ static RBTree *sharedRBTree = nil;
     if([parentNode.mNodeValue compare:value] == NSOrderedSame){
         nodeResult = parentNode;
         
-    } else if([parentNode.mNodeValue compare:value] == NSOrderedDescending){ // 下降，左孩纸
+    } else if([parentNode.mNodeValue compare:value] == NSOrderedAscending){ // 上升，左孩纸
         nodeResult = [self searchNodeWithParentValue:parentNode.getLeftNode withSearchValue:value];
         
-    } else if([parentNode.mNodeValue compare:value] == NSOrderedAscending){ // 上升，右孩纸
+    } else if([parentNode.mNodeValue compare:value] == NSOrderedDescending){ // 下降，右孩纸
         nodeResult = [self searchNodeWithParentValue:parentNode.getRightNode withSearchValue:value];
         
     }
     return nodeResult;
-}
-
-/** 删除节点值 */
-+ (void) deleteValue:(NSNumber*)value
-{
-    [[RBTree sharedRBTree] deleteValue:value];
-}
-
-/** 添加节点值 */
-+ (void) addValue:(NSNumber*)value
-{
-    [[RBTree sharedRBTree] addValue:value];
 }
 
 /** 添加节点值 */
@@ -260,8 +322,8 @@ static RBTree *sharedRBTree = nil;
 - (void) addValueWithParentNode:(RBTreeNode*)parentNode withNewTreeNode:(RBTreeNode*)newTreeNode
 {
     /** 二叉树的插入操作 */
-    if([newTreeNode.getNodeValue compare:parentNode.getNodeValue] == NSOrderedSame
-       || [newTreeNode.getNodeValue compare:parentNode.getNodeValue] == NSOrderedDescending){ // 左节点
+    if([parentNode.getNodeValue compare:newTreeNode.getNodeValue] == NSOrderedSame
+       || [parentNode.getNodeValue compare:newTreeNode.getNodeValue] == NSOrderedDescending){ // 左节点
     
         if(parentNode.getLeftNode == nil){ // 如果左孩纸为空，直接赋值
             [parentNode setLeftNode:newTreeNode];
@@ -278,7 +340,7 @@ static RBTree *sharedRBTree = nil;
     }
 }
 /** 根据当前指向的节点调整红黑树 */
-- (void) handleRBTreeForAddNode:(__weak RBTreeNode*)treeNode
+- (void) handleRBTreeForAddNode:(RBTreeNode*)treeNode
 {
     /** 情况1：红黑树只有一个根节点 */
     if(treeNode == mRootTreeNode){ // 如果是根节点，那么直接将节点变黑即可
@@ -337,37 +399,47 @@ static RBTree *sharedRBTree = nil;
             }
         }
     }
+    [mRootTreeNode setParentNode:nil];
 }
 /** 节点旋转 - 向右旋转 */
-- (void) nodeRotate_toRight:(__weak RBTreeNode*)treeNode
+- (void) nodeRotate_toRight:(RBTreeNode*)treeNode
 {
     RBTreeNode *leftChildTreeNode = [treeNode getLeftNode]; // 当前节点的左孩纸
     RBTreeNode *parentTreeNode = [treeNode getParentNode];
-    if(parentTreeNode != nil){
+    if(parentTreeNode != nil
+       && treeNode != mRootTreeNode){
         if(parentTreeNode.getLeftNode == treeNode){
             [parentTreeNode setLeftNode:leftChildTreeNode];
         } else {
             [parentTreeNode setRightNode:leftChildTreeNode];
         }
+    } else { // 根节点
+        mRootTreeNode = leftChildTreeNode;
+        [mRootTreeNode setParentNode:nil];
     }
+    
     RBTreeNode *rightForChildTreeNode = [leftChildTreeNode getRightNode]; // 左孩纸的右孩纸
     [treeNode setLeftNode:rightForChildTreeNode];
     [leftChildTreeNode setRightNode:treeNode];
 }
 /** 节点旋转 - 向左旋转 */
-- (void) nodeRotate_toLeft:(__weak RBTreeNode*)treeNode
+- (void) nodeRotate_toLeft:(RBTreeNode*)treeNode
 {
     RBTreeNode *rightChildTreeNode = [treeNode getRightNode]; // 当前节点的右孩纸
     RBTreeNode *parentTreeNode = [treeNode getParentNode];
-    if(parentTreeNode != nil){
+    if(parentTreeNode != nil
+       && treeNode != mRootTreeNode){
         if(parentTreeNode.getLeftNode == treeNode){
             [parentTreeNode setLeftNode:rightChildTreeNode];
         } else {
             [parentTreeNode setRightNode:rightChildTreeNode];
         }
+    } else { // 根节点
+        mRootTreeNode = rightChildTreeNode;
+        [mRootTreeNode setParentNode:nil];
     }
     
-    RBTreeNode *leftForChildTreeNode = [rightChildTreeNode getRightNode]; // 右孩纸的左孩纸
+    RBTreeNode *leftForChildTreeNode = [rightChildTreeNode getLeftNode]; // 右孩纸的左孩纸
     [treeNode setRightNode:leftForChildTreeNode];
     [rightChildTreeNode setLeftNode:treeNode];
 }

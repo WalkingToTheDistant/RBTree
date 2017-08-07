@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		CF298D4A1F331A5A00CA80E8 /* RBTreeView.m in Sources */ = {isa = PBXBuildFile; fileRef = CF298D491F331A5A00CA80E8 /* RBTreeView.m */; };
 		CF84AD931F1CC0A3003856D8 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = CF84AD921F1CC0A3003856D8 /* main.m */; };
 		CF84AD961F1CC0A3003856D8 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = CF84AD951F1CC0A3003856D8 /* AppDelegate.m */; };
 		CF84AD991F1CC0A3003856D8 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = CF84AD981F1CC0A3003856D8 /* ViewController.m */; };
@@ -18,6 +19,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		CF298D481F331A5A00CA80E8 /* RBTreeView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RBTreeView.h; sourceTree = "<group>"; };
+		CF298D491F331A5A00CA80E8 /* RBTreeView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RBTreeView.m; sourceTree = "<group>"; };
 		CF84AD8E1F1CC0A3003856D8 /* TreePro.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TreePro.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CF84AD921F1CC0A3003856D8 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		CF84AD941F1CC0A3003856D8 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
@@ -45,6 +48,15 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		CF298D471F331A3D00CA80E8 /* RBTreeView */ = {
+			isa = PBXGroup;
+			children = (
+				CF298D481F331A5A00CA80E8 /* RBTreeView.h */,
+				CF298D491F331A5A00CA80E8 /* RBTreeView.m */,
+			);
+			path = RBTreeView;
+			sourceTree = "<group>";
+		};
 		CF84AD851F1CC0A3003856D8 = {
 			isa = PBXGroup;
 			children = (
@@ -64,6 +76,7 @@
 		CF84AD901F1CC0A3003856D8 /* TreePro */ = {
 			isa = PBXGroup;
 			children = (
+				CF298D471F331A3D00CA80E8 /* RBTreeView */,
 				CF84ADA81F1CC0D4003856D8 /* RBTree */,
 				CF84AD941F1CC0A3003856D8 /* AppDelegate.h */,
 				CF84AD951F1CC0A3003856D8 /* AppDelegate.m */,
@@ -172,6 +185,7 @@
 				CF84AD991F1CC0A3003856D8 /* ViewController.m in Sources */,
 				CF84ADAB1F1CC127003856D8 /* RBTreeNode.m in Sources */,
 				CF84AD961F1CC0A3003856D8 /* AppDelegate.m in Sources */,
+				CF298D4A1F331A5A00CA80E8 /* RBTreeView.m in Sources */,
 				CF84AD931F1CC0A3003856D8 /* main.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
