@@ -33,4 +33,8 @@
 /** 获取某个节点的左子树高度 */
 - (int) getTreeNodeLeftHeight:(RBTreeNode*)treeNode;
 
++ (BOOL) isBrotherHaveTheRightChild:(RBTreeNode*)treeNode;
+
++ (BOOL) isBrotherHaveTheLeftChild:(RBTreeNode*)treeNode;
+
 @end

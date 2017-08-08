@@ -27,6 +27,35 @@ static RBTree *sharedRBTree = nil;
 {
     return mRootTreeNode;
 }
++ (BOOL) isBrotherHaveTheRightChild:(RBTreeNode*)treeNode
+{
+    BOOL isResult = NO;
+    RBTreeNode *parentNode = treeNode.getParentNode;
+    if(parentNode != nil){
+        RBTreeNode *brother = parentNode.getLeftNode;
+        if(brother != nil){
+            if(brother.getRightNode != nil){
+                isResult = YES;
+            }
+        }
+    }
+    return isResult;
+}
+
++ (BOOL) isBrotherHaveTheLeftChild:(RBTreeNode*)treeNode
+{
+    BOOL isResult = NO;
+    RBTreeNode *parentNode = treeNode.getParentNode;
+    if(parentNode != nil){
+        RBTreeNode *brother = parentNode.getRightNode;
+        if(brother != nil){
+            if(brother.getLeftNode != nil){
+                isResult = YES;
+            }
+        }
+    }
+    return isResult;
+}
 /** 获取树高度 */
 - (int) getTreeHeight
 {
@@ -38,6 +67,7 @@ static RBTree *sharedRBTree = nil;
     
     return height;
 }
+
 /** 获取某个节点的右子树高度 */
 - (int) getTreeNodeRightHeight:(RBTreeNode*)treeNode
 {

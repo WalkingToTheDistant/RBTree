@@ -22,6 +22,7 @@ static const int SpaceXForNode = RadiusCircle*11/10;
     UIColor *mColorBlack;
     UIColor *mColorRed;
     UIColor *mColorLine;
+    NSMutableArray<NSValue*> *mMuAryForNodeRect;
 }
 - (instancetype) initWithFrame:(CGRect)frame
 {
@@ -31,11 +32,17 @@ static const int SpaceXForNode = RadiusCircle*11/10;
     }
     return self;
 }
+- (void) removeFromSuperview
+{
+    [super removeFromSuperview];
+    [mMuAryForNodeRect removeAllObjects];
+}
 - (void) initData
 {
     mColorBlack = [UIColor blackColor];
     mColorRed = [UIColor redColor];
     mColorLine = [UIColor blueColor];
+    mMuAryForNodeRect = [NSMutableArray new];
 }
 // Only override drawRect: if you perform custom drawing.
 // An empty implementation adversely affects performance during animation.
@@ -69,6 +76,34 @@ static const int SpaceXForNode = RadiusCircle*11/10;
     if(contextRef == nil){ return; }
     if(treeNode == nil){ return; }
     
+    // 首先检查将要画节点的位置，是否跟其他节点的位置有重合（覆盖）的情况，如果有，则稍微改变一下位置
+    CGRect frameTo;
+    frameTo.origin.x = pointTo.x - RadiusCircle;
+    frameTo.origin.y = pointTo.y - RadiusCircle;
+    frameTo.size = CGSizeMake(RadiusCircle*2, RadiusCircle*2);
+    
+    int index = 3;
+    for(NSValue *valueRect in mMuAryForNodeRect){
+        CGRect frameAry = [valueRect CGRectValue];
+        index = 3; // 最多检查三遍
+        while (YES && index> 0) {
+            BOOL isIntersect = CGRectIntersectsRect(frameTo, frameAry);
+            if(isIntersect == YES ){ // 两矩阵交错
+                if(CGRectGetMinX(frameTo) < CGRectGetMinX(frameAry)){ // 将要画的节点在已画节点的左边
+                    frameTo.origin.x -= SpaceXForNode; // 先减去一个单位的距离，然后重新检查一下这两个矩阵是否交错，如果还交错，则继续处理
+                    
+                } else {
+                    frameTo.origin.x += SpaceXForNode;
+                }
+                index -= 1; // 最多检查次数，避免死循环
+                continue;
+            }
+            break;
+        }
+    }
+    pointTo.x = frameTo.origin.x + RadiusCircle;
+    [mMuAryForNodeRect addObject:[NSValue valueWithCGRect:frameTo]];
+    
     // 先画线条
     if(CGPointEqualToPoint(pointBegin, pointTo) != YES){
         float value = (pointTo.x - pointBegin.x) / (pointTo.y - pointBegin.y);
@@ -92,9 +127,6 @@ static const int SpaceXForNode = RadiusCircle*11/10;
     }
     
     // 画节点圆
-    CGPoint pointCenter = CGPointMake(pointTo.x, pointTo.y);
-    pointCenter.x -= RadiusCircle;
-    pointCenter.y -= RadiusCircle;
     if(treeNode.getNodeColor == NodeColor_Red){ // 红色节点
         CGContextSetFillColorWithColor(contextRef, mColorRed.CGColor);
     } else { // 黑色节点
@@ -114,11 +146,6 @@ static const int SpaceXForNode = RadiusCircle*11/10;
     [strText drawAtPoint:pointText withAttributes:dic];
     
     // 采用深度优先的方式绘制树
-//    int valueForRootNode = ((pow(2, treeHeight-1) - 2)*SpaceXForNode)/2;
-//    if(valueForRootNode < 0){
-//        valueForRootNode = 0;
-//    }
-    
     if(treeNode.getLeftNode != nil){ // 先绘制左子树
         int heightLeft = [[RBTree sharedRBTree] getTreeNodeRightHeight:treeNode.getLeftNode];
         int valueForRootNode = heightLeft * SpaceXForNode + ((heightLeft > 0)? heightLeft-1 : 0) * LengthX_Line;
@@ -148,6 +175,7 @@ static const int SpaceXForNode = RadiusCircle*11/10;
 /** 刷新界面，一般用在修改红黑树之后 */
 - (void) refreshView
 {
+    [mMuAryForNodeRect removeAllObjects];
     [self setNeedsDisplay];
 }
 /** 先计算红黑树的高度，然后设置合适的尺寸 */
