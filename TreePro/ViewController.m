@@ -44,8 +44,10 @@ typedef enum : int{
     [btn setFrame:CGRectMake(0, 0, 50, 50)];
     [btn.layer setCornerRadius:4.0];
     [btn setClipsToBounds:YES];
-    [btn setBackgroundColor:RGBAColor(0, 0, 0, 0.6f)];
+    [btn setBackgroundColor:[UIColor clearColor]];
     [btn setTag:ViewTag_AddNode];
+    [btn setContentMode:UIViewContentModeCenter];
+    [btn setImage:[UIImage imageNamed:@"add"] forState:UIControlStateNormal];
     [btn addTarget:self action:@selector(clickBtn:) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:btn];
     
@@ -64,15 +66,43 @@ typedef enum : int{
 - (void) clickBtn:(UIButton*) btn
 {
     int value = ((int)random())%1000;
-    [[RBTree sharedRBTree] addValue:@(value)];
-    [mTextViewForAdd setText:[NSString stringWithFormat:@"%i", value]];
-    [self adjustTreeView];
+    
+    __block UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"新加节点" message:@"输入新节点的节点值" preferredStyle:UIAlertControllerStyleAlert];
+    [alertController addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
+        textField.placeholder = @"输入节点值";
+        textField.keyboardType = UIKeyboardTypeNamePhonePad;
+        textField.returnKeyType = UIReturnKeyDone;
+    }];
+    UIAlertAction *alertActionCancel = [UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:nil];
+    [alertController addAction:alertActionCancel];
+    
+    UIAlertAction *alertActionCommit = [UIAlertAction actionWithTitle:@"确定" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        
+        UITextField *textField = alertController.textFields[0];
+        NSString *str = textField.text;
+        [[RBTree sharedRBTree] addValue:@([str intValue])];
+        [mTextViewForAdd setText:[NSString stringWithFormat:@"%i", value]];
+        [self adjustTreeView];
+    }];
+    [alertController addAction:alertActionCommit];
+    
+    [self presentViewController:alertController animated:YES completion:nil];
+    
+    
 }
 
 - (void) adjustTreeView
 {
     [mRBTreeView adjustTreeView:^(CGSize sizeView) {
         [mScrollView setContentSize:sizeView];
+        CGPoint pointOffset = CGPointZero;
+        if(sizeView.width > CGRectGetWidth(mScrollView.bounds)){
+            pointOffset.x = (sizeView.width - CGRectGetWidth(mScrollView.bounds))/2;
+        }
+        if(sizeView.height > CGRectGetHeight(mScrollView.bounds)){
+            pointOffset.y = (sizeView.height - CGRectGetHeight(mScrollView.bounds))/2;
+        }
+        [mScrollView setContentOffset:pointOffset animated:NO];
     }];
 }
 
