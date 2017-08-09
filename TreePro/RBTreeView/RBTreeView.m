@@ -86,7 +86,7 @@ static const int SpaceXForNode = RadiusCircle*11/10;
     for(NSValue *valueRect in mMuAryForNodeRect){
         CGRect frameAry = [valueRect CGRectValue];
         index = 3; // 最多检查三遍
-        while (YES && index> 0) {
+        while ( YES && index>0 ) {
             BOOL isIntersect = CGRectIntersectsRect(frameTo, frameAry);
             if(isIntersect == YES ){ // 两矩阵交错
                 if(CGRectGetMinX(frameTo) < CGRectGetMinX(frameAry)){ // 将要画的节点在已画节点的左边
@@ -94,8 +94,9 @@ static const int SpaceXForNode = RadiusCircle*11/10;
                     
                 } else {
                     frameTo.origin.x += SpaceXForNode;
+                    
                 }
-                index -= 1; // 最多检查次数，避免死循环
+                index -= 1; // 最多检查次数，避免特殊情况出现的死循环
                 continue;
             }
             break;

@@ -19,6 +19,13 @@
     // Override point for customization after application launch.
     return YES;
 }
+- (BOOL) shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation {
+    return (toInterfaceOrientation == UIInterfaceOrientationLandscapeRight);
+}
+
+- (UIInterfaceOrientationMask)supportedInterfaceOrientations {
+    return UIInterfaceOrientationMaskLandscapeRight;
+}
 
 
 - (void)applicationWillResignActive:(UIApplication *)application {
